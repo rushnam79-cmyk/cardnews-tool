@@ -1,0 +1,622 @@
+<title>카드뉴스 체험판</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Gowun+Batang:wght@700&family=Nanum+Myeongjo:wght@800&family=Gugi&family=Nanum+Pen+Script&family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
+<style>
+/* Layout: 휴대폰 앱 하나. 하단 탭 3개(만들기·편집·보관함), 편집은 카드 미리보기 위 · 조절 아래, 넓은 화면에서는 좌우 분할 */
+:root{
+  --bg:#EEF1F4; --panel:#FFFFFF; --ink:#16191F; --muted:#5B6472; --line:#D5DAE1;
+  --accent:#0F7D63; --accent-ink:#FFFFFF; --warn:#9A5B00; --warn-bg:#FFF3DC;
+  --font-ui:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --font-card:"Black Han Sans","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#101318; --panel:#191D24; --ink:#EDF0F4; --muted:#9AA4B2; --line:#2B323D;
+    --accent:#3CCB9F; --accent-ink:#06241B; --warn:#F2C26B; --warn-bg:#2E2412; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101318; --panel:#191D24; --ink:#EDF0F4; --muted:#9AA4B2; --line:#2B323D;
+  --accent:#3CCB9F; --accent-ink:#06241B; --warn:#F2C26B; --warn-bg:#2E2412; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:15px;line-height:1.55;padding-inline:16px;padding-block:0}
+.app{max-width:960px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+header{padding-block:18px 8px;display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-size:20px;margin:0;font-weight:800;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:13px}
+main{flex:1;padding-bottom:88px}
+.screen[hidden]{display:none!important}
+.tabbar{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);display:flex;justify-content:center;gap:0;padding:6px 16px calc(6px + env(safe-area-inset-bottom,0px));z-index:5}
+.tabbar .in{display:flex;width:100%;max-width:960px}
+.tab{flex:1;border:0;background:none;color:var(--muted);font:inherit;font-weight:700;padding:10px 4px;border-radius:8px;cursor:pointer}
+.tab[aria-selected="true"]{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.tab:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+section.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}
+h2{font-size:15px;margin:0 0 10px;font-weight:800}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px;font-weight:500}
+textarea,input[type=text],select{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+textarea{resize:vertical;min-height:120px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>*{min-width:0}
+.btn{font:inherit;font-weight:700;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:10px 14px;cursor:pointer}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn:disabled{opacity:.55;cursor:default}
+.note{background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:10px 12px;font-size:13px}
+.samples{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.sample{text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:12px;cursor:pointer;font:inherit;color:var(--ink)}
+.sample b{display:block;font-size:14px;margin-bottom:4px}
+.sample span{font-size:12px;color:var(--muted)}
+.edit{display:grid;grid-template-columns:1fr;gap:14px}
+@media (min-width:820px){.edit{grid-template-columns:minmax(0,380px) minmax(0,1fr);align-items:start}.stick{position:sticky;top:12px}}
+.canvaswrap{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+canvas#card{display:block;width:100%;height:auto;aspect-ratio:4/5;border-radius:6px;background:#222}
+.chips{display:flex;flex-direction:column;gap:6px}
+.chip{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:8px;padding:9px 10px;cursor:pointer;background:var(--bg);font-size:14px}
+.chip input{margin-top:4px;flex:none}
+.chip[data-on="1"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--bg))}
+.bgs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.bgbtn{border:2px solid transparent;border-radius:8px;height:44px;cursor:pointer;color:#fff;font:inherit;font-size:12px;font-weight:700}
+.bgbtn[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--panel) inset}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{flex:1;border:0;background:var(--bg);color:var(--ink);font:inherit;padding:8px;cursor:pointer;font-weight:500}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:700}
+ul.facts{margin:0;padding-left:18px;font-size:14px}
+.pv{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:20;overflow:auto;padding:16px;display:flex;justify-content:center;align-items:flex-start}
+.pvbox{background:var(--panel);color:var(--ink);border-radius:12px;width:100%;max-width:420px;overflow:hidden;margin-block:auto}
+.pvtop{display:flex;align-items:center;gap:10px;padding:10px 12px}
+.pvav{width:32px;height:32px;border-radius:50%;background:var(--accent);flex:none}
+.pvbox img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover}
+.pvicons{display:flex;gap:14px;padding:10px 12px 4px}
+.pvicons svg{width:26px;height:26px;stroke:var(--ink);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.pvcap{padding:4px 12px 10px;white-space:pre-wrap;word-break:break-word;font-size:14px;line-height:1.55}
+.pvnote{margin:0;padding:0 12px 12px;font-size:12px;color:var(--muted)}
+.fonts{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.fontbtn{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:10px 8px;font-size:18px;cursor:pointer;line-height:1.2}
+.fontbtn[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+.swatches{display:flex;flex-wrap:wrap;gap:8px}
+.sw{width:38px;height:38px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0;font-size:11px;font-weight:700;color:var(--ink);background:var(--bg)}
+.sw[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 35%,transparent)}
+.saved{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.savedcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px;cursor:pointer;text-align:left;font:inherit;color:var(--ink)}
+.savedcard img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:6px}
+.savedcard span{display:block;font-size:12px;color:var(--muted);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.empty{color:var(--muted);padding:28px 8px;text-align:center}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:8px;font-size:13px;z-index:9;max-width:90vw}
+.status{font-size:13px;color:var(--muted);min-height:20px;margin-top:8px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="app">
+  <header>
+    <h1>카드뉴스 체험판</h1>
+    <span class="sub">기사 글감 → 제목·본문·카드 이미지</span>
+  </header>
+
+  <main>
+    <!-- 만들기 -->
+    <div class="screen" id="s-make">
+      <section class="box">
+        <h2>글감 넣기</h2>
+        <label for="src">기사 내용 또는 직접 쓴 글</label>
+        <textarea id="src" placeholder="기사 본문을 붙여넣거나, 전하고 싶은 내용을 직접 적어 주세요."></textarea>
+        <label for="srcname">출처 (카드 아래에 들어갑니다)</label>
+        <input type="text" id="srcname" placeholder="예: ○○일보 2026.10.10">
+        <label for="mode">본문 형식</label>
+        <select id="mode">
+          <option value="explain">설명형: 핵심을 차근차근</option>
+          <option value="empathy">공감형: 내 이야기처럼 느끼게</option>
+          <option value="vote">투표형: 찬성·반대 의견을 묻기</option>
+        </select>
+        <label for="apikey">Anthropic API 키 (글 만들기용, 이 브라우저에만 저장됩니다)</label>
+        <input type="password" id="apikey" placeholder="sk-ant-..." autocomplete="off">
+        <div class="status">키가 없으면 "예시 카드"와 직접 쓰기로 카드를 만들 수 있습니다.</div>
+        <div class="row" style="margin-top:14px">
+          <button class="btn primary" id="gen">만들기</button>
+        </div>
+        <div class="status" id="genstatus" role="status"></div>
+      </section>
+      <section class="box">
+        <h2>예시 카드 5개 먼저 보기</h2>
+        <p class="note" style="margin:0 0 12px">예시는 만들어 낸 가상의 소식입니다. 실제 뉴스가 아니며, 지역·수치는 모두 예시입니다.</p>
+        <div class="samples" id="samples"></div>
+      </section>
+      <section class="box">
+        <h2>이 체험판에서 다른 점</h2>
+        <p class="sub" style="margin:0">AI 그림 대신 색·무늬 배경 6종이나 내 사진으로 카드를 만듭니다. 사진은 편집 화면의 "카드 모양"에서 넣습니다. 글 생성은 Claude가 맡고, 글자는 프로그램이 그림 위에 얹어서 크기와 위치를 고칠 수 있습니다.</p>
+      </section>
+    </div>
+
+    <!-- 편집 -->
+    <div class="screen" id="s-edit" hidden>
+      <div class="edit">
+        <div class="stick">
+          <div class="canvaswrap">
+            <canvas id="card" width="1080" height="1350" aria-label="카드 미리보기"></canvas>
+            <div class="row" style="margin-top:10px">
+              <button class="btn" id="previewbtn" type="button">인스타 미리보기</button>
+              <button class="btn primary" id="savepng">이미지 저장</button>
+              <button class="btn" id="copybody">본문 복사</button>
+              <button class="btn" id="keep">보관함에 담기</button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <section class="box">
+            <h2>제목 고르기</h2>
+            <div class="chips" id="titlechips"></div>
+            <label for="title">제목 고치기</label>
+            <textarea id="title" style="min-height:70px"></textarea>
+            <label for="kicker">위쪽 라벨</label>
+            <input type="text" id="kicker">
+            <label for="source">아래 출처</label>
+            <input type="text" id="source">
+          </section>
+          <section class="box">
+            <h2>카드 모양</h2>
+            <label>배경</label>
+            <div class="bgs" id="bgs"></div>
+            <label for="photo">내 사진을 배경으로 넣기</label>
+            <div class="row">
+              <input type="file" id="photo" accept="image/*" style="flex:1;min-width:0">
+              <button class="btn" id="photoclear" type="button">사진 빼기</button>
+            </div>
+            <label for="dim">사진 어둡게 <span id="dimv"></span></label>
+            <input type="range" id="dim" min="0" max="70" step="5">
+            <label for="size">글자 크기 <span id="sizev"></span></label>
+            <input type="range" id="size" min="52" max="132" step="2">
+            <label for="ypos">글자 위치 (위↔아래)</label>
+            <input type="range" id="ypos" min="22" max="80" step="1">
+            <label>글꼴</label>
+            <div class="fonts" id="fonts"></div>
+            <label for="localfont">내 컴퓨터에 설치된 글꼴 쓰기</label>
+            <div class="row">
+              <input type="text" id="localfont" list="localfonts" placeholder="글꼴 이름 입력 (예: 맑은 고딕)" style="flex:1;min-width:0">
+              <button class="btn" id="loadfonts" type="button">내 글꼴 목록 불러오기</button>
+            </div>
+            <datalist id="localfonts"></datalist>
+            <label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="localbold" checked style="width:auto"> 굵게</label>
+            <div class="sub" id="localnote" style="margin-top:4px">설치된 글꼴의 이름을 입력하면 이 컴퓨터에서 바로 쓸 수 있습니다. 저장한 이미지에는 그 글꼴이 그대로 들어갑니다.</div>
+            <label>글자색</label>
+            <div class="swatches" id="swatches"></div>
+            <div class="row" style="margin-top:10px;align-items:center">
+              <label for="customcolor" style="margin:0">색 직접 고르기</label>
+              <input type="color" id="customcolor" value="#ffffff" style="width:56px;height:36px;padding:0;border:1px solid var(--line);border-radius:8px;background:none">
+            </div>
+            <label for="strokew">글자 테두리 두께 <span id="strokev"></span></label>
+            <input type="range" id="strokew" min="0" max="24" step="1">
+            <div class="row" style="margin-top:8px;align-items:center">
+              <label for="strokecolor" style="margin:0">테두리 색</label>
+              <input type="color" id="strokecolor" value="#000000" style="width:56px;height:36px;padding:0;border:1px solid var(--line);border-radius:8px;background:none">
+            </div>
+          </section>
+          <section class="box">
+            <h2>인스타 본문</h2>
+            <textarea id="body" style="min-height:220px"></textarea>
+          </section>
+          <section class="box">
+            <h2>원문에서 가져온 사실 (게시 전에 원문과 대조하세요)</h2>
+            <ul class="facts" id="facts"></ul>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- 보관함 -->
+    <div class="screen" id="s-saved" hidden>
+      <section class="box">
+        <h2>보관함</h2>
+        <div id="savedlist"></div>
+        <p class="sub" style="margin-bottom:0">이 브라우저에만 저장됩니다. 다른 기기에서는 보이지 않습니다.</p>
+      </section>
+    </div>
+  </main>
+</div>
+
+<nav class="tabbar" aria-label="화면 이동"><div class="in">
+  <button class="tab" role="tab" data-t="make" aria-selected="true">만들기</button>
+  <button class="tab" role="tab" data-t="edit" aria-selected="false">편집</button>
+  <button class="tab" role="tab" data-t="saved" aria-selected="false">보관함</button>
+</div></nav>
+<div class="pv" id="preview" hidden role="dialog" aria-label="인스타그램 미리보기">
+  <div class="pvbox">
+    <div class="pvtop"><span class="pvav"></span><b>내계정</b><button class="btn" id="pvclose" type="button" style="margin-left:auto;padding:6px 12px">닫기</button></div>
+    <img id="pvimg" alt="카드 미리보기">
+    <div class="pvicons" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 0 1-12.4 7.5L3.5 20.5l1.1-4.4A8.5 8.5 0 1 1 20.5 12z"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M21 3.5L10 14M21 3.5l-6.5 17-4.5-6.5L3.5 9.5z"/></svg>
+    </div>
+    <div class="pvcap"><b>내계정</b> <span id="pvbody"></span></div>
+    <p class="pvnote">실제 인스타그램 화면과 조금 다를 수 있습니다.</p>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+"use strict";
+var $=function(id){return document.getElementById(id)};
+
+/* ---------- 배경 6종 ---------- */
+var BGS=[
+ {k:"night",name:"밤하늘",fg:"#FFFFFF",scrim:.18,sw:"linear-gradient(160deg,#0E1B3D,#27407A)"},
+ {k:"paper",name:"종이",fg:"#141922",scrim:0,sw:"linear-gradient(160deg,#E6ECF2,#CFD9E3)"},
+ {k:"dusk",name:"노을",fg:"#FFFFFF",scrim:.28,sw:"linear-gradient(160deg,#F08A4B,#B23A68)"},
+ {k:"forest",name:"숲",fg:"#FFFFFF",scrim:.22,sw:"linear-gradient(160deg,#1F6B4F,#0B3B2F)"},
+ {k:"ink",name:"잉크",fg:"#FFFFFF",scrim:.1,sw:"linear-gradient(160deg,#20242C,#0C0E12)"},
+ {k:"sea",name:"바다",fg:"#FFFFFF",scrim:.24,sw:"linear-gradient(160deg,#1B8FA6,#0B4A6B)"}
+];
+function rnd(seed){var s=seed;return function(){s=(s*1664525+1013904223)%4294967296;return s/4294967296}}
+function drawBg(ctx,k,W,H){
+  var r=rnd(7),i,g;
+  if(k==="night"){
+    g=ctx.createLinearGradient(0,0,W*.4,H);g.addColorStop(0,"#0E1B3D");g.addColorStop(1,"#2A4580");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    for(i=0;i<70;i++){ctx.fillStyle="rgba(255,255,255,"+(.15+r()*.5)+")";ctx.beginPath();ctx.arc(r()*W,r()*H*.8,1+r()*3,0,6.3);ctx.fill()}
+    ctx.fillStyle="rgba(255,255,255,.08)";ctx.beginPath();ctx.arc(W*.82,H*.2,150,0,6.3);ctx.fill();
+  }else if(k==="paper"){
+    ctx.fillStyle="#E6ECF2";ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle="rgba(20,40,70,.09)";ctx.lineWidth=2;
+    for(i=0;i<=W;i+=54){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,H);ctx.stroke()}
+    for(i=0;i<=H;i+=54){ctx.beginPath();ctx.moveTo(0,i);ctx.lineTo(W,i);ctx.stroke()}
+    ctx.fillStyle="rgba(15,125,99,.9)";ctx.fillRect(80,150,120,10);
+  }else if(k==="dusk"){
+    g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#F5A25A");g.addColorStop(.55,"#D9506A");g.addColorStop(1,"#4A2352");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    ctx.fillStyle="rgba(255,236,190,.55)";ctx.beginPath();ctx.arc(W*.5,H*.72,230,0,6.3);ctx.fill();
+    ctx.fillStyle="rgba(40,16,48,.85)";ctx.fillRect(0,H*.84,W,H);
+    for(i=0;i<9;i++){var x=i*140+r()*40,h=80+r()*200;ctx.fillRect(x,H*.84-h,80+r()*40,h)}
+  }else if(k==="forest"){
+    g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#2B7B5A");g.addColorStop(1,"#0A3328");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    var cols=["rgba(12,64,48,.55)","rgba(8,46,36,.7)","rgba(5,30,24,.85)"];
+    for(var L=0;L<3;L++){ctx.fillStyle=cols[L];ctx.beginPath();ctx.moveTo(0,H);var y0=H*(.58+L*.12);
+      for(i=0;i<=W;i+=60){ctx.lineTo(i,y0-Math.sin(i/170+L*2)*70-r()*40)}ctx.lineTo(W,H);ctx.closePath();ctx.fill()}
+  }else if(k==="ink"){
+    g=ctx.createLinearGradient(0,0,W,H);g.addColorStop(0,"#262B34");g.addColorStop(1,"#0B0D11");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle="rgba(255,255,255,.06)";ctx.lineWidth=18;
+    for(i=-H;i<W;i+=70){ctx.beginPath();ctx.moveTo(i,H);ctx.lineTo(i+H,0);ctx.stroke()}
+  }else{
+    g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#1E97AD");g.addColorStop(1,"#083F5E");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    for(var w=0;w<7;w++){ctx.strokeStyle="rgba(255,255,255,"+(.05+w*.015)+")";ctx.lineWidth=6;ctx.beginPath();
+      for(i=0;i<=W;i+=20){var yy=H*(.5+w*.07)+Math.sin(i/110+w)*26;i?ctx.lineTo(i,yy):ctx.moveTo(i,yy)}ctx.stroke()}
+  }
+}
+
+/* ---------- 상태 ---------- */
+var S={kicker:"오늘의 이슈",titles:[],title:"",body:"",facts:[],source:"",bg:"night",size:88,y:50,font:"card",color:"auto"};
+
+var FONTS={
+  card:{name:"굵은 제목체",css:'"Black Han Sans"',w:400,s:1},
+  dohyeon:{name:"도현체",css:'"Do Hyeon"',w:400,s:1.05},
+  jua:{name:"주아체",css:'"Jua"',w:400,s:1.05},
+  gothic:{name:"고딕 굵게",css:'"Noto Sans KR"',w:800,s:1},
+  batang:{name:"고운바탕",css:'"Gowun Batang"',w:700,s:1},
+  myeongjo:{name:"나눔명조",css:'"Nanum Myeongjo"',w:800,s:1},
+  gugi:{name:"구기체",css:'"Gugi"',w:400,s:.95},
+  pen:{name:"손글씨",css:'"Nanum Pen Script"',w:400,s:1.3}
+};
+function fkey(){return S.font==="local"&&S.fontName?"local":(S.font==="ui"?"gothic":(FONTS[S.font]?S.font:"card"))}
+function curFont(){
+  if(fkey()==="local")return {css:'"'+String(S.fontName).replace(/"/g,"")+'"',w:S.fontBold===false?400:700,s:1};
+  return FONTS[fkey()];
+}
+function colorOf(){var c=S.color||"auto";if(c==="white")return "#FFFFFF";if(c==="black")return "#141922";return c}
+function ensureFont(){if(fkey()==="local")return;var F=curFont();if(document.fonts&&document.fonts.load){document.fonts.load(F.w+" 60px "+F.css,"가나다").then(draw,function(){})}}
+function wrap(ctx,text,maxW){
+  var out=[],paras=String(text).split("\n"),p,line,i,ch,t;
+  for(p=0;p<paras.length;p++){
+    line="";
+    for(i=0;i<paras[p].length;i++){
+      ch=paras[p][i];t=line+ch;
+      if(ctx.measureText(t).width>maxW&&line){
+        var sp=line.lastIndexOf(" ");
+        if(sp>line.length*.5&&ch!==" "){out.push(line.slice(0,sp));line=line.slice(sp+1)+ch}
+        else{out.push(line);line=ch===" "?"":ch}
+      }else line=t;
+    }
+    out.push(line);
+  }
+  return out;
+}
+function draw(){
+  var c=$("card"),ctx=c.getContext("2d"),W=1080,H=1350;
+  var bg=BGS.filter(function(b){return b.k===S.bg})[0]||BGS[0];
+  var hasPhoto=!!(S.photo&&photoImg&&photoImg.complete&&photoImg.naturalWidth);
+  if(hasPhoto){
+    var sc=Math.max(W/photoImg.naturalWidth,H/photoImg.naturalHeight),dw=photoImg.naturalWidth*sc,dh=photoImg.naturalHeight*sc;
+    ctx.fillStyle="#000";ctx.fillRect(0,0,W,H);
+    ctx.drawImage(photoImg,(W-dw)/2,(H-dh)/2,dw,dh);
+    ctx.fillStyle="rgba(0,0,0,"+((S.dim==null?35:S.dim)/100)+")";ctx.fillRect(0,0,W,H);
+  }else{
+    drawBg(ctx,S.bg,W,H);
+    if(bg.scrim){ctx.fillStyle="rgba(0,0,0,"+bg.scrim+")";ctx.fillRect(0,0,W,H)}
+  }
+  var fg=colorOf()!=="auto"?colorOf():(hasPhoto?"#FFFFFF":bg.fg);
+  ctx.textBaseline="alphabetic";
+  /* 라벨 */
+  if(S.kicker){
+    ctx.font='700 34px "Noto Sans KR",sans-serif';
+    var kw=ctx.measureText(S.kicker).width+44;
+    ctx.strokeStyle=fg;ctx.lineWidth=3;ctx.globalAlpha=.9;
+    ctx.beginPath();ctx.roundRect?ctx.roundRect(80,84,kw,62,31):ctx.rect(80,84,kw,62);ctx.stroke();
+    ctx.fillStyle=fg;ctx.fillText(S.kicker,102,127);ctx.globalAlpha=1;
+  }
+  /* 제목 */
+  var size=S.size;
+  var F=curFont();
+  ctx.font=F.w+" "+Math.round(size*F.s)+"px "+F.css+',"Noto Sans KR",sans-serif';
+  var lines=wrap(ctx,S.title,W-160),lh=size*1.3,total=lines.length*lh;
+  var cy=H*S.y/100,y=cy-total/2+size*.95;
+  var sw=S.sw||0;
+  if(sw>0){
+    ctx.lineJoin="round";ctx.miterLimit=2;ctx.lineWidth=sw*2;ctx.strokeStyle=S.sc||"#000000";
+    for(var j=0;j<lines.length;j++){ctx.strokeText(lines[j],80,y+j*lh)}
+  }
+  ctx.fillStyle=fg;
+  for(var i=0;i<lines.length;i++){ctx.fillText(lines[i],80,y+i*lh)}
+  /* 출처 */
+  if(S.source){ctx.font='500 28px "Noto Sans KR",sans-serif';ctx.globalAlpha=.75;ctx.fillText(S.source,80,H-72);ctx.globalAlpha=1}
+}
+var fontsReady=false;
+function loadFonts(){
+  if(!document.fonts||!document.fonts.load){fontsReady=true;return Promise.resolve()}
+  return Promise.all([document.fonts.load('64px "Black Han Sans"',"가나다"),document.fonts.load('800 40px "Noto Sans KR"',"가나다"),document.fonts.load('500 28px "Noto Sans KR"',"가나다")]).catch(function(){}).then(function(){fontsReady=true;draw()});
+}
+
+/* ---------- 화면 ---------- */
+function show(t){
+  ["make","edit","saved"].forEach(function(n){$("s-"+n).hidden=(n!==t)});
+  document.querySelectorAll(".tab").forEach(function(b){b.setAttribute("aria-selected",b.dataset.t===t?"true":"false")});
+  if(t==="edit")draw();
+  if(t==="saved")renderSaved();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll(".tab").forEach(function(b){b.addEventListener("click",function(){show(b.dataset.t)})});
+var tt;function toast(m){var e=$("toast");e.textContent=m;e.hidden=false;clearTimeout(tt);tt=setTimeout(function(){e.hidden=true},2400)}
+
+var photoImg=null,photoSrc="";
+function setPhotoImg(src){
+  if(src===photoSrc)return;
+  photoSrc=src;
+  if(!src){photoImg=null;return}
+  var im=new Image();im.onload=function(){photoImg=im;draw()};im.src=src;
+}
+function renderEdit(){
+  setPhotoImg(S.photo||"");
+  $("dim").value=S.dim==null?35:S.dim;$("dimv").textContent=($("dim").value)+"%";
+  $("title").value=S.title;$("kicker").value=S.kicker;$("source").value=S.source;$("body").value=S.body;
+  var box=$("titlechips");box.innerHTML="";
+  S.titles.forEach(function(t,i){
+    var l=document.createElement("label");l.className="chip";l.style.margin="0";l.style.color="var(--ink)";l.dataset.on=(t===S.title?"1":"0");
+    var r=document.createElement("input");r.type="radio";r.name="tc";r.checked=(t===S.title);
+    var s=document.createElement("span");s.textContent=t;
+    l.appendChild(r);l.appendChild(s);
+    r.addEventListener("change",function(){S.title=t;$("title").value=t;box.querySelectorAll(".chip").forEach(function(c){c.dataset.on="0"});l.dataset.on="1";draw()});
+    box.appendChild(l);
+  });
+  var f=$("facts");f.innerHTML="";
+  (S.facts.length?S.facts:["(사실 목록이 없습니다)"]).forEach(function(x){var li=document.createElement("li");li.textContent=x;f.appendChild(li)});
+  $("size").value=S.size;$("sizev").textContent=S.size;$("ypos").value=S.y;
+  document.querySelectorAll("#bgs .bgbtn").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.k===S.bg?"true":"false")});
+  document.querySelectorAll("#fonts .fontbtn").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.f===fkey()?"true":"false")});
+  var cc=colorOf();
+  document.querySelectorAll("#swatches .sw").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.c.toLowerCase()===cc.toLowerCase()?"true":"false")});
+  if(/^#[0-9a-f]{6}$/i.test(cc))$("customcolor").value=cc.toLowerCase();
+  $("localfont").value=S.font==="local"?(S.fontName||""):"";
+  $("localbold").checked=S.fontBold!==false;
+  $("strokew").value=S.sw||0;$("strokev").textContent=(S.sw||0)+"px";
+  $("strokecolor").value=S.sc||"#000000";
+  ensureFont();
+}
+/* 배경 버튼 */
+BGS.forEach(function(b){var e=document.createElement("button");e.className="bgbtn";e.dataset.k=b.k;e.textContent=b.name;e.style.background=b.sw;e.style.color=b.k==="paper"?"#141922":"#fff";e.setAttribute("aria-pressed","false");
+  e.addEventListener("click",function(){S.bg=b.k;renderEdit();draw()});$("bgs").appendChild(e)});
+$("title").addEventListener("input",function(e){S.title=e.target.value;draw()});
+$("kicker").addEventListener("input",function(e){S.kicker=e.target.value;draw()});
+$("source").addEventListener("input",function(e){S.source=e.target.value;draw()});
+$("body").addEventListener("input",function(e){S.body=e.target.value});
+$("size").addEventListener("input",function(e){S.size=+e.target.value;$("sizev").textContent=S.size;draw()});
+$("ypos").addEventListener("input",function(e){S.y=+e.target.value;draw()});
+Object.keys(FONTS).forEach(function(k){
+  var b=document.createElement("button");b.type="button";b.className="fontbtn";b.dataset.f=k;b.textContent=FONTS[k].name;
+  b.style.fontFamily=FONTS[k].css+',"Noto Sans KR",sans-serif';b.style.fontWeight=FONTS[k].w;b.setAttribute("aria-pressed","false");
+  b.addEventListener("click",function(){S.font=k;renderEdit();draw()});$("fonts").appendChild(b);
+});
+[["auto","자동"],["#FFFFFF",""],["#141922",""],["#FFD84D",""],["#FF6B5E",""],["#6FD3FF",""],["#7BE495",""],["#FF9F43",""],["#F8A5C2",""]].forEach(function(c){
+  var b=document.createElement("button");b.type="button";b.className="sw";b.dataset.c=c[0];b.setAttribute("aria-pressed","false");
+  if(c[0]==="auto"){b.textContent="자동";b.title="배경에 맞춰 자동"}else{b.style.background=c[0];b.title=c[0]}
+  b.addEventListener("click",function(){S.color=c[0];renderEdit();draw()});$("swatches").appendChild(b);
+});
+$("customcolor").addEventListener("input",function(e){S.color=e.target.value.toUpperCase();renderEdit();draw()});
+
+/* 글자 테두리 */
+$("strokew").addEventListener("input",function(e){S.sw=+e.target.value;$("strokev").textContent=S.sw+"px";draw()});
+$("strokecolor").addEventListener("input",function(e){S.sc=e.target.value;draw()});
+
+/* 내 컴퓨터 글꼴 */
+function isInstalled(n){
+  var c=document.createElement("canvas").getContext("2d"),t="Aa WMiw 가나다라마바사 한글",ok=false;
+  ["monospace","serif"].forEach(function(b){
+    c.font="40px "+b;var w0=c.measureText(t).width;
+    c.font='40px "'+n+'",'+b;var w1=c.measureText(t).width;
+    if(w0!==w1)ok=true;
+  });
+  return ok;
+}
+function useLocalFont(){
+  var n=$("localfont").value.trim().replace(/"/g,"");
+  if(!n){if(S.font==="local"){S.font="card";renderEdit();draw()}return}
+  if(!isInstalled(n)){$("localnote").textContent="이 컴퓨터에서 \""+n+"\" 글꼴을 찾지 못했습니다. 글꼴 이름을 다시 확인해 주세요.";return}
+  S.font="local";S.fontName=n;S.fontBold=$("localbold").checked;
+  $("localnote").textContent="\""+n+"\" 글꼴을 적용했습니다.";
+  renderEdit();draw();
+}
+$("localfont").addEventListener("change",useLocalFont);
+$("localbold").addEventListener("change",function(){S.fontBold=$("localbold").checked;if(S.font==="local")draw()});
+$("loadfonts").addEventListener("click",function(){
+  var note=$("localnote");
+  if(!window.queryLocalFonts){note.textContent="이 화면에서는 글꼴 목록을 불러올 수 없습니다. 글꼴 이름을 직접 입력하면 사용할 수 있습니다.";return}
+  var p;try{p=window.queryLocalFonts()}catch(e){p=Promise.reject(e)}
+  p.then(function(list){
+    var seen={},dl=$("localfonts");dl.innerHTML="";
+    list.forEach(function(f){if(!seen[f.family]){seen[f.family]=1;var o=document.createElement("option");o.value=f.family;dl.appendChild(o)}});
+    note.textContent=Object.keys(seen).length+"개 글꼴을 불러왔습니다. 입력칸을 눌러 고르세요."
+  }).catch(function(){note.textContent="브라우저가 글꼴 목록 접근을 허용하지 않았습니다. 글꼴 이름을 직접 입력하면 사용할 수 있습니다."});
+});
+
+/* ---------- 인스타 미리보기 ---------- */
+function openPreview(){
+  draw();
+  $("pvimg").src=$("card").toDataURL("image/jpeg",.9);
+  $("pvbody").textContent=S.body||"(본문이 비어 있습니다)";
+  $("preview").hidden=false;
+  document.body.style.overflow="hidden";
+}
+function closePreview(){$("preview").hidden=true;document.body.style.overflow=""}
+$("previewbtn").addEventListener("click",openPreview);
+$("pvclose").addEventListener("click",closePreview);
+$("preview").addEventListener("click",function(e){if(e.target===$("preview"))closePreview()});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("preview").hidden)closePreview()});
+
+/* ---------- 내 사진 ---------- */
+$("photo").addEventListener("change",function(e){
+  var f=e.target.files&&e.target.files[0];
+  if(!f)return;
+  if(!/^image\//.test(f.type)){toast("사진 파일을 선택해 주세요");return}
+  var fr=new FileReader();
+  fr.onload=function(){
+    var im=new Image();
+    im.onload=function(){
+      var sc=Math.min(1,1080/Math.max(im.naturalWidth,1)),c=document.createElement("canvas");
+      c.width=Math.max(1,Math.round(im.naturalWidth*sc));c.height=Math.max(1,Math.round(im.naturalHeight*sc));
+      c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+      S.photo=c.toDataURL("image/jpeg",.82);
+      if(S.dim==null)S.dim=35;
+      setPhotoImg(S.photo);renderEdit();draw();toast("사진을 넣었습니다");
+    };
+    im.onerror=function(){toast("이 사진은 열 수 없습니다. JPG나 PNG로 시도해 주세요")};
+    im.src=fr.result;
+  };
+  fr.readAsDataURL(f);
+  e.target.value="";
+});
+$("photoclear").addEventListener("click",function(){S.photo="";setPhotoImg("");photoImg=null;draw();toast("사진을 뺐습니다")});
+$("dim").addEventListener("input",function(e){S.dim=+e.target.value;$("dimv").textContent=S.dim+"%";draw()});
+
+/* ---------- 저장·복사 ---------- */
+$("savepng").addEventListener("click",function(){
+  draw();
+  $("card").toBlob(function(blob){
+    if(!blob){toast("이미지를 만들지 못했습니다");return}
+    var fname="cardnews-"+new Date().toISOString().slice(0,10)+".png";
+    if(!window.claude||!window.claude.use){
+      var u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=fname;document.body.appendChild(a);a.click();a.remove();
+      setTimeout(function(){URL.revokeObjectURL(u)},4000);toast("저장했습니다");return}
+    window.claude.use("downloads").then(function(d){
+      if(!d){toast("이 화면에서는 저장을 지원하지 않습니다");return}
+      d.save({filename:"cardnews-"+new Date().toISOString().slice(0,10)+".png",data:blob}).then(function(){toast("저장했습니다")},function(e){toast(e&&e.code==="declined"?"저장을 취소했습니다":"저장하지 못했습니다")});
+    });
+  },"image/png");
+});
+$("copybody").addEventListener("click",function(){
+  var t=$("body").value,ta=$("body");
+  function fb(){ta.focus();ta.select();toast("본문을 선택했습니다. 길게 눌러 복사하세요")}
+  try{navigator.clipboard.writeText(t).then(function(){toast("본문을 복사했습니다")},fb)}catch(e){fb()}
+});
+function getSaved(){try{return JSON.parse(localStorage.getItem("cn_saved")||"[]")}catch(e){return []}}
+function setSaved(a){try{localStorage.setItem("cn_saved",JSON.stringify(a));return true}catch(e){return false}}
+$("keep").addEventListener("click",function(){
+  draw();
+  var th=document.createElement("canvas");th.width=270;th.height=338;th.getContext("2d").drawImage($("card"),0,0,270,338);
+  var a=getSaved();a.unshift({s:JSON.parse(JSON.stringify(S)),th:th.toDataURL("image/jpeg",.7),t:Date.now()});
+  toast(setSaved(a.slice(0,12))?"보관함에 담았습니다":"이 브라우저에서는 보관할 수 없습니다");
+});
+function renderSaved(){
+  var a=getSaved(),box=$("savedlist");box.innerHTML="";
+  if(!a.length){box.innerHTML='<div class="empty">아직 담은 카드가 없습니다. 편집 화면에서 "보관함에 담기"를 눌러 보세요.</div>';return}
+  var g=document.createElement("div");g.className="saved";
+  a.forEach(function(it){
+    var b=document.createElement("button");b.className="savedcard";
+    var im=document.createElement("img");im.src=it.th;im.alt="";
+    var sp=document.createElement("span");sp.textContent=it.s.title.replace(/\n/g," ");
+    b.appendChild(im);b.appendChild(sp);
+    b.addEventListener("click",function(){S=it.s;renderEdit();show("edit")});
+    g.appendChild(b);
+  });
+  box.appendChild(g);
+}
+
+/* ---------- 예시 5개 (가상의 소식) ---------- */
+var SAMPLES=[
+ {name:"새봄시 버스 요금 동결",mode:"설명형",bg:"night",kicker:"생활 · 교통",
+  titles:["새봄시 버스 요금, 내년에도 그대로","시내버스 1,500원 동결, 달라지는 점은","버스비는 안 오른다, 대신 바뀌는 것","내년 새봄시 버스, 요금 대신 이것이 달라진다","한 달 교통비, 얼마나 아낄 수 있을까"],
+  body:"새봄시가 내년 시내버스 요금을 올해와 같은 1,500원으로 유지하기로 했습니다.\n\n📌 핵심만 정리하면\n1) 요금: 1,500원 그대로\n2) 대신 심야 노선은 2개에서 4개로 늘립니다\n3) 환승 할인 시간은 30분에서 40분으로 넓어집니다\n\n매일 버스를 타는 분이라면 환승 시간이 넓어지는 점을 눈여겨보세요.\n\n(예시 카드입니다. 실제 소식이 아닙니다)\n#교통 #버스요금 #생활정보 #이슈정리 #카드뉴스",
+  facts:["내년 시내버스 요금 1,500원 유지 (예시)","심야 노선 2개 → 4개 (예시)","환승 할인 30분 → 40분 (예시)"],source:"예시 기사 · 실제 뉴스 아님"},
+ {name:"한빛시 폭염 휴식 의무",mode:"공감형",bg:"dusk",kicker:"일터 · 안전",
+  titles:["한낮 땡볕 아래, 쉬어도 되는 시간이 생겼다","폭염 속 야외 일, 이제 1시간 일하면 10분 쉰다","더위 속에서도 일해야 했던 분들께","그늘 한 칸이 간절했던 하루, 달라집니다","한빛시, 야외 근로자 휴식 시간 의무화"],
+  body:"한여름 한낮에 밖에서 일해 보신 분은 압니다. 물 한 모금 마시기도 눈치 보이던 순간을요.\n\n한빛시가 폭염 경보가 내려지면 1시간 일할 때마다 10분씩 쉬도록 하는 방침을 내놓았습니다.\n\n쉴 수 있는 그늘과 물이 현장에 마련되는지는 앞으로 지켜봐야 합니다. 여러분의 일터는 어떤가요?\n\n(예시 카드입니다. 실제 소식이 아닙니다)\n#폭염 #야외근로자 #휴식권 #공감 #카드뉴스",
+  facts:["폭염 경보 시 1시간 일하면 10분 휴식 (예시)","그늘과 음용수 준비 의무 (예시)"],source:"예시 기사 · 실제 뉴스 아님"},
+ {name:"푸른구 보호구역 단속 카메라",mode:"투표형",bg:"sea",kicker:"우리 동네 · 안전",
+  titles:["어린이보호구역 단속 카메라, 두 배로 늘린다면","아이 등굣길 카메라 40대 추가, 찬성? 반대?","스쿨존 단속 확대, 여러분의 생각은","푸른구, 학교 앞 카메라 대폭 확대 추진","등굣길 안전 vs 운전자 부담, 어느 쪽이 맞을까"],
+  body:"푸른구가 관내 초등학교 앞 단속 카메라를 20대에서 40대로 늘리는 안을 추진합니다.\n\n찬성하는 쪽: 아이들 안전이 먼저, 사고 위험 구간부터 설치\n걱정하는 쪽: 설치 위치 기준이 불분명, 단속 위주 대책에 대한 의문\n\n여러분은 어느 쪽인가요?\n👍 찬성  👎 반대 (댓글로 이유도 남겨 주세요)\n\n(예시 카드입니다. 실제 소식이 아닙니다)\n#어린이보호구역 #스쿨존 #투표 #우리동네 #카드뉴스",
+  facts:["단속 카메라 20대 → 40대 (예시)","대상은 관내 초등학교 앞 (예시)"],source:"예시 기사 · 실제 뉴스 아님"},
+ {name:"가온시 전통시장 주차 무료",mode:"설명형",bg:"forest",kicker:"지역 · 상권",
+  titles:["전통시장 주차, 2시간까지 무료","가온시 시장 가는 길, 주차비 걱정 덜었다","장 보러 갈 때 알아 둘 주차 무료 규정","시장 주차 2시간, 이렇게 적용됩니다","가온시 전통시장 주차 정책 한눈에"],
+  body:"가온시가 전통시장 공영주차장을 2시간까지 무료로 운영합니다.\n\n✅ 무료 시간: 2시간 (초과 시 10분당 요금 부과)\n✅ 대상: 시장 인근 공영주차장 3곳\n✅ 확인 방법: 시장 상인회 확인 도장 또는 영수증\n\n확인 방식이 장소마다 다를 수 있으니 방문 전에 시 안내를 한 번 보세요.\n\n(예시 카드입니다. 실제 소식이 아닙니다)\n#전통시장 #주차 #지역소식 #생활정보 #카드뉴스",
+  facts:["공영주차장 2시간 무료 (예시)","대상 주차장 3곳 (예시)","초과 시 10분당 요금 (예시)"],source:"예시 기사 · 실제 뉴스 아님"},
+ {name:"소나무시 심야 무인 편의점",mode:"투표형",bg:"ink",kicker:"소비 · 일자리",
+  titles:["심야 무인 편의점, 늘어나는 게 맞을까","밤 11시 이후엔 사람이 없다, 괜찮을까","무인 편의점 확대, 편리함과 일자리 사이","소나무시 심야 무인 점포 두 배로","새벽 편의점, 점원 없이 운영해도 될까"],
+  body:"소나무시에서 밤 11시 이후 직원 없이 운영하는 편의점이 올해 두 배로 늘었습니다.\n\n편리하다는 쪽: 새벽에도 안전하게 물건을 살 수 있다\n걱정되는 쪽: 야간 일자리가 줄고 문제가 생겼을 때 대응이 늦다\n\n여러분은 어느 쪽에 가깝나요?\n👍 늘려도 좋다  👎 속도 조절이 필요하다\n\n(예시 카드입니다. 실제 소식이 아닙니다)\n#무인편의점 #야간일자리 #투표 #소비 #카드뉴스",
+  facts:["심야 무인 운영 점포 두 배 증가 (예시)","운영 시간 밤 11시 이후 (예시)"],source:"예시 기사 · 실제 뉴스 아님"}
+];
+var sbox=$("samples");
+SAMPLES.forEach(function(x){
+  var b=document.createElement("button");b.className="sample";
+  var n=document.createElement("b");n.textContent=x.name;var m=document.createElement("span");m.textContent=x.mode+" · "+x.titles[0];
+  b.appendChild(n);b.appendChild(m);
+  b.addEventListener("click",function(){
+    S={kicker:x.kicker,titles:x.titles.slice(),title:x.titles[0],body:x.body,facts:x.facts.slice(),source:x.source,bg:x.bg,size:88,y:50,font:"card",color:"auto"};
+    renderEdit();show("edit");
+  });
+  sbox.appendChild(b);
+});
+
+/* ---------- Claude로 만들기 ---------- */
+var MODE={explain:"설명형 (핵심을 번호나 체크 표시로 차근차근 정리)",empathy:"공감형 (독자의 상황을 먼저 떠올리게 하고 공감하는 말투)",vote:"투표형 (양쪽 입장을 짧게 소개하고 찬성/반대를 댓글로 묻기)"};
+var busy=false;
+$("gen").addEventListener("click",function(){
+  var src=$("src").value.trim();
+  if(src.length<30){$("genstatus").textContent="글감을 조금 더 길게 넣어 주세요. (30자 이상)";return}
+  if(busy)return;
+  var key=$("apikey").value.trim(),useClaude=!!(window.claude&&window.claude.use);
+  if(!useClaude&&!key){$("genstatus").textContent="글 만들기에는 Anthropic API 키가 필요합니다. 키 없이는 예시 카드나 직접 쓰기를 이용하세요.";return}
+  if(key){try{localStorage.setItem("cn_key",key)}catch(e){}}
+  busy=true;$("gen").disabled=true;$("genstatus").textContent="글을 만드는 중입니다. 보통 10초에서 40초 걸립니다.";
+  var mode=$("mode").value,srcname=$("srcname").value.trim();
+  (useClaude&&!key?window.claude.use("sample"):Promise.resolve("api")).then(function(sample){
+    if(!sample)throw {code:"unavailable"};
+    var prompt='당신은 인스타그램 카드뉴스 편집자입니다. 아래 글감을 바탕으로 한국어 카드뉴스 재료를 만드세요.\n'+
+      '규칙:\n- 글감의 문장을 그대로 옮기지 말고, 확인되는 사실만 자기 말로 다시 쓴다.\n- 글감에 없는 숫자·날짜·이름·인용을 만들어 내지 않는다.\n- 사건·사고의 피해자나 실존 인물의 얼굴·외모를 묘사하지 않는다.\n- 자극적이지만 사실과 어긋나지 않는 제목을 쓴다. 제목 하나는 28자 이내.\n- 본문 형식: '+MODE[mode]+'\n- 본문은 줄바꿈이 있는 인스타그램 글, 마지막에 해시태그 5개.\n\n'+
+      'JSON만 출력하세요. 형식: {"kicker":"6자 이내 분야 라벨","titles":["제목 5개"],"body":"본문","facts":["글감에서 가져온 사실 3~5개"],"mood":"night|paper|dusk|forest|ink|sea 중 하나(주제 분위기에 맞게)"}\n\n글감:\n'+src.slice(0,6000);
+    if(sample!=="api")return sample.json(prompt,{modelTier:"quick"});
+    return fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({model:"claude-haiku-5-5",max_tokens:2000,messages:[{role:"user",content:prompt}]})})
+    .then(function(r){if(!r.ok)throw {code:r.status===401?"badkey":"bad"};return r.json()})
+    .then(function(j){var t=(j.content&&j.content[0]&&j.content[0].text)||"";var m=t.match(/\{[\s\S]*\}/);if(!m)throw {code:"bad"};return JSON.parse(m[0])});
+  }).then(function(r){
+    if(!r||!r.titles||!r.titles.length)throw {code:"bad"};
+    var mood=BGS.some(function(b){return b.k===r.mood})?r.mood:"night";
+    S={kicker:r.kicker||"오늘의 이슈",titles:r.titles.slice(0,5),title:r.titles[0],body:r.body||"",facts:r.facts||[],source:srcname?"출처: "+srcname:"",bg:mood,size:88,y:50,font:"card",color:"auto"};
+    $("genstatus").textContent="";renderEdit();show("edit");
+  }).catch(function(e){
+    var c=e&&e.code;
+    $("genstatus").textContent=c==="not_granted"?"글 만들기 사용을 허용해 주세요.":c==="rate_limited"?"잠시 뒤에 다시 눌러 주세요.":c==="badkey"?"API 키가 맞지 않습니다. 다시 확인해 주세요.":c==="unavailable"?"이 화면에서는 글 만들기를 쓸 수 없습니다.":"글을 만들지 못했습니다. 글감을 확인하고 다시 시도해 주세요.";
+  }).then(function(){busy=false;$("gen").disabled=false});
+});
+
+/* 시작 */
+S={kicker:SAMPLES[0].kicker,titles:SAMPLES[0].titles.slice(),title:SAMPLES[0].titles[0],body:SAMPLES[0].body,facts:SAMPLES[0].facts.slice(),source:SAMPLES[0].source,bg:SAMPLES[0].bg,size:88,y:50,font:"card",color:"auto"};
+try{var k0=localStorage.getItem("cn_key");if(k0)$("apikey").value=k0}catch(e){}
+renderEdit();draw();loadFonts();
+})();
+</script>
